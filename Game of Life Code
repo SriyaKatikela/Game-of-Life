@@ -1,0 +1,152 @@
+'''
+Conway's Game of Life
+@author: Sriya Katikela
+'''
+
+import pygame
+import random
+
+currentGen = []
+nextGen = []
+
+win_width = 860
+win_height = 600
+
+boardWidth = win_width - 205
+
+dimWidth = 30  # squares wide
+dimHeight = 30  # squares high
+squareWidth = boardWidth/dimWidth
+squareHeight = win_height/dimHeight
+
+def drawButton(screen, color, buttonR, buttonText):
+    pygame.draw.rect(screen, color, buttonR, border_radius=10)
+    screen.blit(buttonText, buttonR.move(buttonR.width/2 - buttonText.get_width()/2,
+                                         buttonR.height/2 - buttonText.get_height()/2))
+
+
+# num of rows/cols , num of alive , percent of alive dots , current gen num
+def calcs(trials, screen, font):
+    alive = 0
+    for row in range(dimHeight):
+        for col in range(dimWidth):
+            if currentGen[row][col] == 1:
+                alive += 1
+    percentage = alive / (dimWidth*dimHeight)
+    texts = [f"Rows: {dimWidth}", f"Columns: {dimHeight}", f"Generation: {trials}", f"Alive: {alive}",
+             f"Alive percentage: {round(percentage*100, 2)}%"]
+    y = 205
+    pygame.draw.rect(screen, "gray", pygame.Rect(610, 200, 243, len(texts) * 25 + 20), border_radius=10)
+    for i in texts:
+        text = font.render(i, False, "black")
+        screen.blit(text, (615, y))
+        y += 25
+
+
+def main():
+    global currentGen, currentGen
+    pygame.init()
+    screen = pygame.display.set_mode((win_width, win_height))
+    max_FPS = 4  # throttles the FPS to 60
+    clock = pygame.time.Clock()
+
+    genNum = 1
+
+    def oneTrial():
+        for row in range(dimHeight):
+            currentGen.append([])  # add a new row to the list
+            nextGen.append([])
+            for col in range(dimWidth):
+                currentGen[row].append(random.choice([0, 0, 0, 0, 1]))  # add an emtpy cell
+                nextGen[row].append(0)
+
+        buttonFont = pygame.font.SysFont("Arial", 24, True, False)
+        calcs(genNum, screen, buttonFont)
+
+    oneTrial()
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:  # clicking on the red X
+                running = False
+
+        for row in range(dimHeight):
+            for col in range(dimWidth):
+                determineDeaths(row, col)
+
+        # display current gen
+        # color determined by life/death
+        # x, y = based on row, col
+        for row in range(dimHeight):
+            for col in range(dimWidth):
+                color = "black"
+                if currentGen[row][col] == 0:
+                    color = "white"
+                pygame.draw.rect(screen, color, (squareHeight*col, squareHeight*row, squareWidth, squareHeight))
+                pygame.draw.rect(screen, "gray", (squareHeight * col, squareHeight * row, squareWidth, squareHeight), 1)
+
+        # set the "current generation" to the "next generation" (update values)
+        for row in range(dimWidth):
+            for col in range(dimHeight):
+                currentGen[row][col] = nextGen[row][col]
+
+        oneTrial()
+
+        genNum += 1
+        clock.tick(max_FPS)
+        pygame.display.flip()
+
+
+# look at one cell (row, col) and determine what the value will be
+    # 1) Go through the current generation and determine the cells that die
+    # 2) Determine the cells that live
+    # 3) Determine the new births
+def determineDeaths(row, col):
+    neighbors = 0
+    result = 0  # or 1
+
+    if not row == 0:  # if it isn't in the top row
+        if not col == 0:  # left row
+            if currentGen[row-1][col-1] == 1:  # top left
+                neighbors += 1
+
+        if currentGen[row-1][col] == 1:  # up
+            neighbors += 1
+
+        if col < (dimWidth-1):
+            if currentGen[row-1][col+1] == 1:  # top right
+                neighbors += 1
+
+    if not col == 0:  # if it isn't the left column
+        if currentGen[row][col-1] == 1:  # left
+            neighbors += 1
+
+    if col < (dimWidth-1):  # if it isn't in the right column
+        if currentGen[row][col+1] == 1:  # right
+            neighbors += 1
+
+    if row < (dimHeight-1):  # if it isn't in the bottom row
+        if not col == 0:
+            if currentGen[row+1][col-1] == 1:  # bottom left
+                neighbors += 1
+
+        if currentGen[row+1][col] == 1:  # down
+            neighbors += 1
+
+        if col < (dimWidth-1):
+            if currentGen[row+1][col+1] == 1:  # bottom right
+                neighbors += 1
+
+
+    if currentGen[row][col] == 1 and (neighbors == 2 or neighbors == 3):
+        result = 1
+
+    if currentGen[row][col] == 0 and neighbors == 3:
+        result = 1
+
+    nextGen[row][col] = result
+
+
+if __name__ == '__main__':
+    main()
